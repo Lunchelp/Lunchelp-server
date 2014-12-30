@@ -63,17 +63,21 @@ class Db():
             __tablename__ = 'events'
 
             id = Column(Integer, Sequence('event_id_seq'), primary_key=True)
+            name = Column(String(500))
+            desc = Column(String(2000))
             resurant_id = Column(Integer, ForeignKey('resturants.id'))
             group_id = Column(Integer, ForeignKey('groups.id'))
-            date = Column(Integer)
+            time = Column(Integer)
 
             resturant = relationship("resturants")
 
             def get_json(self):
                 d = OrderedDict()
                 d['id'] = self.id
+                d['name'] = self.name
+                d['desc'] = self.desc
                 d['resturant_id'] = self.resturant_id
-                d['date'] = self.date
+                d['time'] = self.time
                 d['group'] = self.group
 
                 return json.dumps(d)
@@ -87,11 +91,13 @@ class Db():
 
             id = Column(Integer, Sequence('resturant_id_seq'), primary_key=True)
             name = Column(String(500))
+            address = Column(String(500))
 
             def get_json(self):
                 d = OrderedDict()
                 d['id'] = self.id
                 d['name'] = self.name
+                d['address'] = self.address
 
                 return json.dumps(d)
 
