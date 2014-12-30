@@ -1,57 +1,17 @@
 #!/usr/bin/env python3
-import json
-
-from collections import OrderedDict
-
 from flask import Flask, abort, request
 
 from passlib.hash import pbkdf2_sha256
 
-from sqlalchemy import create_engine
-from sqlalchemy import Sequence
-from sqlalchemy import Column, Integer, String
-
-from sqlalchemy.ext.declarative import declarative_base
-
-from sqlalchemy.orm import sessionmaker
-
-from sqlalchemy.exc import IntegrityError
-
-
-
-#engine = create_engine("sqlite:///:memory:", echo=True)
-engine = create_engine("sqlite:///test.db", echo=True)
-Base = declarative_base()
-Session = sessionmaker(bind=engine)
-session = Session()
-
-class User(Base):
-    __tablename__ = 'users'
-
-    id = Column(Integer, Sequence('user_id_seq'), primary_key=True)
-    email = Column(String(254), unique=True)
-    name = Column(String(773)) # Wolfe+585, Sr.
-    password = Column(String)
-
-    def get_json(self):
-        d = OrderedDict()
-        d['id'] = self.id
-        d['email'] = self.email
-        d['name'] = self.name
-        d['password'] = self.password
-
-        return json.dumps(d)
-
-    def __repr__(self):
-        return "User" + str(self.get_json())
-
-Base.metadata.create_all(engine)
+from db import Db
 
 app = Flask(__name__)
 
+db = Db()
+
 @app.route('/')
 def hello():
-    return "Hello World"
+    return "Lunchelp API"
 
 @app.route('/user/add', methods=['POST']) #TODO: remove get
 def user_put():
@@ -63,16 +23,18 @@ def user_put():
     hashed_pw = pbkdf2_sha256.encrypt(request.form['password'],
                                         rounds=20000, salt_size=16)
 
-    user = User(email=request.form['email'],
+    user = db.User(email=request.form['email'],
             name=request.form['name'],
             password=hashed_pw)# TODO: hash password
     try:
-        session.add(user)
-        session.commit()#TODO: necessary?
+        db.session.add(user)
+        db.session.commit()#TODO: necessary?
     except IntegrityError:
-        session.rollback()
+        db.session.rollback()
         abort(400) # non unique email
 
+    if user is None:
+        abort(400)
 
     return user.get_json()
 
@@ -81,7 +43,11 @@ def user_get():
     if request.form.get("email", "") == "":
         abort(400)
 
-    user = session.query(User).filter_by(email=request.form['email']).first()
+    user = db.session.query(db.User).filter_by(email=request.form['email']).first()
+
+    if user is None:
+        abort(400)
+
     return user.get_json()
 
 if __name__ == "__main__":
