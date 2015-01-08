@@ -21,7 +21,7 @@ def hello():
     return "Lunchelp API"
 
 @app.route('/user/add', methods=['POST'])
-def user_post():
+def user_add():
     if (request.form.get("email", "") == "" or
        request.form.get("name", "") == "" or
        request.form.get("password", "") == ""):
@@ -72,8 +72,53 @@ def user_delete():
 
     return user.get_json()
 
+@app.route('/group/add', methods=['POST'])
+def group_add():
+    if (request.form.get("name", "") == ""):
+        return json.dumps({'status': 400, 'message': 'Invalid input'})
+
+    group = g.db.Group(name=request.form['name'])
+
+    try:
+        g.db.session.add(group)
+        g.db.session.commit()#TODO: necessary?
+    except IntegrityError:
+        g.db.session.rollback()
+        return json.dumps({'status': 400, 'message': 'Duplicate group'})#TODO: accurate?
+
+    if group is None:
+        return json.dumps({'status': 500, 'message': "Could not insert group"})
+
+    return group.get_json()
+
+@app.route('/group/get', methods=['POST'])
+def group_get():
+    if request.form.get("name", "") == "":
+        return json.dumps({'status': 400, 'message': 'Invalid input'})
+
+    group = g.db.session.query(g.db.Group).filter_by(name=request.form['name']).first()
+
+    if group is None:
+        return json.dumps({'status': 500, 'message': "Could not find group"})
+
+    return group.get_json()
+
+@app.route('/group/delete', methods=['POST'])
+def group_delete():
+    if request.form.get("name", "") == "":
+        return json.dumps({'status': 400, 'message': 'Invalid input'})
+
+    group = g.db.session.query(g.db.Group).filter_by(name=request.form['name']).first()
+
+    if group is None:
+        return json.dumps({'status': 500, 'message': "Could not find group"})
+
+    g.db.session.delete(group)
+    g.db.session.commit()
+
+    return group.get_json()
 @app.route('/resturant/add', methods=['POST'])
-def resturant_post():
+def resturant_add():
     if (request.form.get("name", "") == "" or
         request.form.get("address", "") == ""):
         return json.dumps({'status': 400, 'message': 'Invalid input'})
@@ -99,41 +144,25 @@ def resturant_get():
 
     resturant = g.db.session.query(g.db.Resturant).filter_by(name=request.form['name']).first()
 
-    if user is None:
+    if resturant is None:
         return json.dumps({'status': 500, 'message': "Could not find resturant"})
 
     return resturant.get_json()
 
-@app.route('/group/add', methods=['POST'])
-def group_post():
-    if (request.form.get("name", "") == ""):
+@app.route('/resturant/delete', methods=['POST'])
+def resturant_delete():
+    if request.form.get("name", "") == "":
         return json.dumps({'status': 400, 'message': 'Invalid input'})
 
-    group = g.db.Group(name=request.form['name'])
-
-    try:
-        g.db.session.add(group)
-        g.db.session.commit()#TODO: necessary?
-    except IntegrityError:
-        g.db.session.rollback()
-        return json.dumps({'status': 400, 'message': 'Duplicate group'})#TODO: accurate?
+    resturant = g.db.session.query(g.db.Resturant).filter_by(name=request.form['name']).first()
 
     if resturant is None:
-        return json.dumps({'status': 500, 'message': "Could not insert group"})
+        return json.dumps({'status': 500, 'message': "Could not find resturant"})
+
+    g.db.session.delete(resturant)
+    g.db.session.commit()
 
     return resturant.get_json()
-
-@app.route('/group/get', methods=['POST'])
-def group_get():
-    if request.form.get("id", "") == "":
-        return json.dumps({'status': 400, 'message': 'Invalid input'})
-
-    group = g.db.session.query(g.db.Group).filter_by(name=request.form['name']).first()
-
-    if user is None:
-        return json.dumps({'status': 500, 'message': "Could not find group"})
-
-    return group.get_json()
 
 @app.route('/event/add', methods=['POST'])
 def event_post():
