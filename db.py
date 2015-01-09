@@ -85,7 +85,7 @@ class Db():
             id = Column(Integer, Sequence('event_id_seq'), primary_key=True)
             name = Column(String(500))
             desc = Column(String(2000))
-            resurant_id = Column(Integer, ForeignKey('resturants.id'))
+            resturant_id = Column(Integer, ForeignKey('resturants.id'))
             group_id = Column(Integer, ForeignKey('groups.id'))
             time = Column(Integer)
 
@@ -97,8 +97,8 @@ class Db():
                 d['name'] = self.name
                 d['desc'] = self.desc
                 d['resturant_id'] = self.resturant_id
+                d['group_id'] = self.group_id
                 d['time'] = self.time
-                d['group'] = self.group
 
                 return json.dumps(d)
 

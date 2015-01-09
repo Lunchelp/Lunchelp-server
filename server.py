@@ -10,7 +10,7 @@ from db import Db
 
 app = Flask(__name__)
 
-app.config['DATABASE'] = "test.db"
+app.config['DATABASE'] = "devel.db"
 
 @app.before_request
 def before_request():
@@ -196,12 +196,27 @@ def event_get():
     if request.form.get("id", "") == "":
         return json.dumps({'status': 400, 'message': 'Invalid input'})
 
-    event = g.db.session.query(g.db.Group).filter_by(id=request.form['id']).first()
+    event = g.db.session.query(g.db.Event).filter_by(id=request.form['id']).first()
 
     if event is None:
         return json.dumps({'status': 500, 'message': "Could not find event"})
 
-    return group.get_json()
+    return event.get_json()
+
+@app.route('/event/delete', methods=['POST'])
+def event_delete():
+    if request.form.get("id", "") == "":
+        return json.dumps({'status': 400, 'message': 'Invalid input'})
+
+    event = g.db.session.query(g.db.Event).filter_by(id=request.form['id']).first()
+
+    if event is None:
+        return json.dumps({'status': 500, 'message': "Could not find event"})
+
+    g.db.session.delete(event)
+    g.db.session.commit()
+
+    return event.get_json()
 
 if __name__ == "__main__":
     app.run(debug=True) #TODO: remove after dev

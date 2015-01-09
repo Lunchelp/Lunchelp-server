@@ -6,6 +6,7 @@ import json
 import os
 import tempfile
 import unittest
+import datetime as dt
 
 class TestUser(unittest.TestCase):
 
@@ -29,6 +30,8 @@ class TestUser(unittest.TestCase):
         data = json.loads(r.data.decode("utf-8"))
 
         self.is_user(data)
+
+        return data['id']
 
     def test_get(self):
         self.test_add()
@@ -74,6 +77,8 @@ class TestGroup(unittest.TestCase):
 
         self.is_group(data)
 
+        return data['id']
+
     def test_get(self):
         self.test_add()
 
@@ -100,7 +105,7 @@ class TestGroup(unittest.TestCase):
         os.close(self.db)
         os.unlink(server.app.config['DATABASE'])
 
-class TestGroup(unittest.TestCase):
+class TestResturant(unittest.TestCase):
 
     def is_resturant(self, data):
         self.assertTrue('name' in data)
@@ -117,6 +122,8 @@ class TestGroup(unittest.TestCase):
         data = json.loads(r.data.decode("utf-8"))
 
         self.is_resturant(data)
+
+        return data['id']
 
     def test_get(self):
         self.test_add()
@@ -139,6 +146,59 @@ class TestGroup(unittest.TestCase):
 
         self.assertTrue('status' in data)
         self.assertEqual(data['message'], "Could not find resturant")
+
+    def tearDown(self):
+        os.close(self.db)
+        os.unlink(server.app.config['DATABASE'])
+
+class TestEvent(unittest.TestCase):
+
+    def is_event(self, data):
+        self.assertTrue('time' in data)
+        self.assertEqual(self.event['time'], data['time'])
+
+        self.assertTrue('name' in data)
+        self.assertEqual(self.event['name'], data['name'])
+
+    def setUp(self):
+        self.app = server.app.test_client()
+        self.db, server.app.config['DATABASE'] = tempfile.mkstemp()
+        server.app.config['TESTING'] = True
+        self.event_time = int((dt.date.today() + dt.timedelta(days=7)).strftime('%s'))
+        self.event = {'name': 'RACE Team Lunch',
+                        'desc': 'Weekly team lunch',
+                        'resturant_id': 1,
+                        'group_id': 1,
+                        'time': self.event_time}
+
+    def test_add(self):
+        r = self.app.post("/event/add", data=self.event)
+        data = json.loads(r.data.decode("utf-8"))
+
+        self.is_event(data)
+        return data['id']
+
+    def test_get(self):
+        event_id = self.test_add()
+
+        r = self.app.post("/event/get", data={"id": event_id})
+        data = json.loads(r.data.decode("utf-8"))
+
+        self.is_event(data)
+
+    def test_delete(self):
+        event_id = self.test_add()
+
+        r = self.app.post("/event/delete", data={"id": event_id})
+        data = json.loads(r.data.decode("utf-8"))
+
+        self.is_event(data)
+
+        r = self.app.post("/event/get", data={"id": event_id})
+        data = json.loads(r.data.decode("utf-8"))
+
+        self.assertTrue('status' in data)
+        self.assertEqual(data['message'], "Could not find event")
 
     def tearDown(self):
         os.close(self.db)
